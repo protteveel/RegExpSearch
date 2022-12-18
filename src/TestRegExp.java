@@ -2,10 +2,10 @@
 	public class TestRegExp {
 		
 		// The name for the regular expression
-		private String theName;
+		private String theName = null;
 		
 		// The regular expression
-		private String theRegExp;
+		private String theRegExp = null;
 		
 		TestRegExp(String newName, String newRegEx) {
 			// Set the name
@@ -15,12 +15,14 @@
 		}
 		
 		// Set the name of the regular expression
-		private void setName(String newName) {
+		protected String setName(String newName) {
 			// Do we have a name?
-			if((newName != null) && (newName.length() > 0)) {
+			if((newName != null) && (newName.length() >= 0)) {
 				// Copy the name
 				theName = newName;
 			}
+			// Return the result
+			return getName();
 		}
 		
 		// Get the name of the regular expression
@@ -30,12 +32,14 @@
 		}
 		
 		// Set the regular expression
-		private void setRegExp(String newRegExp) {
+		protected String setRegExp(String newRegExp) {
 			// Do we have a regular expression?
-			if((newRegExp != null) && (newRegExp.length() > 0)) {
+			if((newRegExp != null) && (newRegExp.length() >= 0)) {
 				// Copy the regular expression
 				theRegExp = newRegExp;
 			}
+			// Return the result
+			return getRegExp();
 		}
 		
 		// Get the regular expression

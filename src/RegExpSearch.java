@@ -17,7 +17,7 @@ public class RegExpSearch {
     	                    UNDEFINED };      // Not set yet.
 
     // Track the overall status
-    private Boolean allOK = true;
+    private Boolean allOK = false;
     
     // List of matching files
     FileCollector fileCollector;
@@ -26,7 +26,7 @@ public class RegExpSearch {
     RegExpCollector regExCollector;
     	                    
     // Display how to use the program
-    public void displayHelp(String msg) {
+    private void displayHelp(String msg) {
     	System.out.println("╔═══════════════════════════════════════════════════════════════════════════════════════════════╗");
         System.out.println("║ RegExSearch, Search for text in files, using regular expressions from a configuration file.   ║");
         System.out.println("║                                                                                               ║");
@@ -38,18 +38,32 @@ public class RegExpSearch {
         System.out.println("║             │ Configuration file   │                                                          ║");
         System.out.println("║             └──────────────────────┘                                                          ║");
         System.out.println("║                                                                                               ║");
-        System.out.println("║ Version: 1.0.0 - Fri Dec 9, 2022                                                              ║");
+        System.out.println("║ Version: 1.0.0 - Fri Dec  9, 2022 - Percy Rotteveel created.                                  ║");
+        System.out.println("║          1.1.0 - Wed Dec 14, 2022 - Percy Rotteveel updated.                                  ║");
+        System.out.println("║          1.1.1 - Sun Dec 18, 2022 - Percy Rotteveel updated.                                  ║");
         System.out.println("║                                                                                               ║");
-        System.out.println("║ Usage:   java -jar RegExSearch.jar -f <path to the file(s) to search>                         ║");
+        System.out.println("║ History: 1.0.0 - Original program.                                                            ║");
+        System.out.println("║          1.1.0 - Move the supporting classes FileCollector and RegExpCollector into their     ║");
+        System.out.println("║                  own project.                                                                 ║");
+        System.out.println("║                - Create JUnit test for the aforementioned classes.                            ║");
+        System.out.println("║                - Create JUnit test for this class.                                            ║");
+        System.out.println("║          1.1.1 - Made it MS Windows compatible.                                               ║");
+        System.out.println("║                                                                                               ║");
+        System.out.println("║ Usage:   java -jar RegExSearch.jar -f \"<path to the file(s) to search>\"                       ║");
         System.out.println("║                                    -c <path to configuration file>                            ║");
         System.out.println("║                                    -o <path to output file>                                   ║");
         System.out.println("║                                                                                               ║");
-        System.out.println("║ Example: java -jar RegExSearch.jar -f ./*.txt* -c ./RegExSearch.conf -o ./RegExSearch.txt     ║");
+        System.out.println("║ Example: java -jar RegExSearch.jar -f \"./*.txt*\" -c ./RegExSearch.conf -o ./RegExSearch.txt   ║");
         System.out.println("║                                                                                               ║");
-        System.out.println("║ Notes:   - It is expected all the file(s) is/are readable.                                    ║");
+        System.out.println("║ Notes:   - It is expected all the file(s) to be searched is/are readable.                     ║");
+        System.out.println("║          - For a correct expansion ALWAYS surround the path to the file(s) to search in with  ║");
+        System.out.println("║            double quotes.                                                                     ║");
         System.out.println("║          - It is expected the config file is readable and is in the correct format.           ║");
         System.out.println("║          - It is expected the output file is writeable and can be overwritten.                ║");
-        System.out.println("║          - Written by Percy Rotteveel.                                                        ║");
+        System.out.println("║          - There is a bug in windows (https://bugs.eclipse.org/bugs/show_bug.cgi?id=212264),  ║");
+        System.out.println("║            where an asterisk ('*') in a program argument, starting with 'C:' always get       ║");
+        System.out.println("║            expanded. So, use ~ for the user's home directory instead of                       ║");
+        System.out.println("║            C:\\Users\\<user name>.                                                              ║");
         System.out.println("║          - Nobody can be held liable for any errors, mistakes, omissions, etc.                ║");
         System.out.println("║          - USE AT YOUR OWN RISK!                                                              ║");
         System.out.println("║                                                                                               ║");
@@ -57,8 +71,8 @@ public class RegExpSearch {
         System.out.println("║          - It is expected, there is one \"detection rule\" per line.                            ║");
         System.out.println("║          - It is expected, a \"detection rule\" has the following format:                       ║");
         System.out.println("║            - <Use the rule (Y/N)?><tab><field identifier><tab><regular expression>. E.g.:     ║");
-        System.out.println("║            - Y	email	^[A-Z0-9. _%+-]+@[A-Z0-9                                            ║");
-        System.out.println("║          - The field identifiers can be any sequence of characters but no <tab>.              ║");
+        System.out.println("║            - Y	SSN	.*\\d{3}-\\d{2}-\\d{4}.*                                                   ║");
+        System.out.println("║          - The field identifiers can be any sequence of characters but not a <tab> character. ║");
         System.out.println("║                                                                                               ║");
         if (( msg != null ) && ( msg.length() > 0 )) {
             System.out.println( msg ); 
@@ -67,14 +81,16 @@ public class RegExpSearch {
     }
     
     // Return the status of the object
-    public Boolean getAllOK() {
+    protected Boolean getAllOK() {
     	return allOK;
     }
     
     // Set the status of the object
-    protected void setAllOK(Boolean newAllOK) {
+    private Boolean setAllOK(Boolean newAllOK) {
     	// Copy the value
-    	allOK = newAllOK; 
+    	allOK = newAllOK;
+    	// Return the result
+    	return getAllOK();
     }
     
     // Format error to fit in the help message box
@@ -121,70 +137,75 @@ public class RegExpSearch {
 		 return retVal;
 	 }
 	 
-	// Make sure the path provided is correct
-	private String checkPath(String newPath) {
-		// Does the path start with a ~?
-		if(newPath.startsWith("~")) {
-			// Get the user's home directory
-			String homeDir = System.getProperty("user.home");
-			// Do we have a home directory?
-			if((homeDir != null) && (homeDir.length() > 0)) {
-				// Replace the ~ with the user's home directory
-				newPath = newPath.replaceFirst("~", homeDir);
+		// Make sure the path provided is correct
+		private String checkPath(String newPath) {
+			// Does the path start with a ~?
+			if(newPath.startsWith("~")) {
+				// Get the user's home directory
+				String homeDir = System.getProperty("user.home");
+				// Do we have a home directory?
+				if((homeDir != null) && (homeDir.length() > 0)) {
+					// Replace the ~ with the user's home directory
+					newPath = homeDir + newPath.substring(1, newPath.length());
+				}
 			}
+			// Return the results
+			return newPath;
 		}
-		// Return the results
-		return newPath;
-	}
 		
 	 // Make sure all arguments were provided
 	 RegExpSearch( String[] arguments ) {
+		 // Nothing is OK just yet
+		 setAllOK(false);
 		 // Track the character parameter
 		 char theKey = '?';
 		 // We haven't determined the parameter yet
 		 Parameter inParameter = Parameter.UNDEFINED;
-        // Do we have at least six arguments
-        if (( arguments != null ) && ( arguments.length >= 6 )){
-           // Get the parameters
-       	for (int i = 0; i < arguments.length; i++ ) {
-       		// Get the argument
-       		String argument = arguments[i];
-       		// Does it start with a '-'?
-       		if( argument.startsWith("-")) {
-       			// Get the parameter
-       			theKey = argument.toLowerCase().charAt(1);
-       			inParameter = charToParameter(  theKey );
-       		} else {
-       			// What parameter as we in?
-       			switch (inParameter) {
-        			case FILE_PATH:
-        				// The next parameter is the path to the log files
-        				filesPath = checkPath( arguments[i]);
-        				break;
-        			case CONFIG_FILE_PATH:
-        				// The next parameter is the path to the configuration file
-        				cnfFilePath = checkPath( arguments[i]);
-        				break;
-        			case OUTPUT_FILE_PATH:
-        				// The next parameter is the path to the output file
-        				outFilePath = checkPath( arguments[i]);
-        				break;
-        			default:
-        				// Wrong parameter, display error message
-        				displayHelp( createErrorMsg("Wrong argument: \"-" + theKey + " " + argument + "\""));
-        				// Break out of the loop
-        				i = arguments.length;
-        				// The overall status is not OK
-        				allOK = false;
-        				break;
-       			}
-       		}
-       	}
+		 // Do we have at least six arguments
+		 if (( arguments != null ) && ( arguments.length >= 6 )){
+            // Get the parameters
+	       	for (int i = 0; i < arguments.length; i++ ) {
+	       		// Get the argument
+	       		String argument = arguments[i];
+	       		// Does it start with a '-'?
+	       		if( argument.startsWith("-")) {
+	       			// Get the parameter
+	       			theKey = argument.toLowerCase().charAt(1);
+	       			inParameter = charToParameter(  theKey );
+	       		} else {
+	       			// What parameter as we in?
+	       			switch (inParameter) {
+	        			case FILE_PATH:
+	        				// The next parameter is the path to the log files
+	        				filesPath = checkPath( arguments[i]);
+	        				break;
+	        			case CONFIG_FILE_PATH:
+	        				// The next parameter is the path to the configuration file
+	        				cnfFilePath = checkPath( arguments[i]);
+	        				break;
+	        			case OUTPUT_FILE_PATH:
+	        				// The next parameter is the path to the output file
+	        				outFilePath = checkPath( arguments[i]);
+	        				break;
+	        			default:
+	        				// Wrong parameter, display error message
+	        				displayHelp( createErrorMsg("Wrong argument: \"-" + theKey + " " + argument + "\""));
+	        				// Break out of the loop
+	        				i = arguments.length;
+	        				break;
+	       			}
+	       		}
+	       	}
+	       	//  Do we have all the parameters?
+	       	if((filesPath != null) && (filesPath.length() > 0) && 
+	       	   (cnfFilePath != null) && (cnfFilePath.length() > 0) && 
+	       	   (outFilePath != null) && (outFilePath.length() > 0)) {
+	       		// All is OK
+	       		setAllOK(true);
+	       	}
        } else {
        	// Display the help information
        	displayHelp( createErrorMsg("Wrong number of arguments (" + arguments.length + "); should be six."));
-       	// The overall status is not OK
-       	allOK = false;
        }
    }
 
@@ -206,7 +227,7 @@ public class RegExpSearch {
 	 // Create the list of regular expressions to test for
 	 private Boolean getRegExTests() {
 		 // Set the default return value
-		 Boolean retVal = true;
+		 Boolean retVal = false;
 		 // Create a new regular expression collector object
 		 regExCollector = new RegExpCollector(cnfFilePath);
 		 // The path to the configuration file was OK?
@@ -233,6 +254,9 @@ public class RegExpSearch {
 					if(getRegExTests()) {
 						// All is OK
 						setAllOK(true);
+					} else {
+						// Inform the user
+						displayHelp( createErrorMsg("Could not find any regular expressions"));
 					}
 				} else {
 					// Inform the user
@@ -329,6 +353,8 @@ public class RegExpSearch {
 					 if(writer != null) {
 						 // Parse through the file list
 						 for(int i=0; i<fileList.length; i++ ) {
+							 // Display the file name
+							 System.out.println(fileList[i]);
 							 // Go through the file looking for matching regular expressions
 							 findRegExp(writer, fileList[i], regExpList);
 						 }

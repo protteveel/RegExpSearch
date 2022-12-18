@@ -8,7 +8,7 @@ import java.util.Vector;
 public class RegExpCollector {
 
 	// Location of the configuration file
-	public static final String CONFIG_FILE_PATH = "/Users/percyrotteveel/workspace/RegExSearch/RegExSearch.conf";
+	public static final String CONFIG_FILE_PATH = "/Users/percyrotteveel/workspace/RegExpCollector/RegExpCollector.conf";
 	
 	// The path to the configuration file
 	private String confFilePath;
@@ -29,7 +29,7 @@ public class RegExpCollector {
 	}
 
 	// Collection of regular expressions
-	Vector<TestRegExp> regExVector =new Vector<TestRegExp>();
+	Vector<TestRegExp> regExVector = null;
 
 	// Constructor to see if there is a configuration file we can read
 	RegExpCollector(String newConfFilePath) {
@@ -43,8 +43,13 @@ public class RegExpCollector {
 			File fileHandle = new File(confFilePath);
 			// The file could be opened?
 			if((fileHandle != null) && (fileHandle.canRead())) {
-				// All is good
-				setAllOK(true);
+				// Create the vector to hold all regular expressions
+				regExVector =new Vector<TestRegExp>();
+				// Where we able to create the vector?
+				if(regExVector != null) {
+					// All is good
+					setAllOK(true);
+				}
 			}
 		}
 	}
@@ -79,11 +84,11 @@ public class RegExpCollector {
 								// Do we have enough parts?
 								if((parts != null) && (parts.length >= 3)) {
 									// Create a new regular expression object
-									TestRegExp theTestRegExp = new TestRegExp(parts[1], parts[2]);
+									TestRegExp theTestRegEx = new TestRegExp(parts[1], parts[2]);
 									// Was the object creates successfully?
-									if(theTestRegExp != null) {
+									if(theTestRegEx != null) {
 										// Add it to the list of regular expression tests
-										regExVector.add(theTestRegExp);
+										regExVector.add(theTestRegEx);
 									}
 								}
 							}
@@ -98,10 +103,10 @@ public class RegExpCollector {
 					}
 				} catch (FileNotFoundException e) {
 					// Inform the user could not read the file
-					System.out.println("Could not open the configuyration file: \"" + confFilePath + "\"");
+					System.out.println("Could not open the configuration file: \"" + confFilePath + "\"");
 				} catch (IOException e) {
 					// Inform the user could not read the file
-					System.out.println("Could not read the configuyration file: \"" + confFilePath + "\"");
+					System.out.println("Could not read the configuration file: \"" + confFilePath + "\"");
 				}
 			}
 		}
@@ -122,11 +127,11 @@ public class RegExpCollector {
 				// Parse through the list
 				for(int i=0; i<regExVector.size(); i++) {
 					// Get the regular expression to test
-					TestRegExp theTestRegExp = regExVector.elementAt(i);
+					TestRegExp theTestRegEx = regExVector.elementAt(i);
 					// Do we have a regular expression to test?
-					if(theTestRegExp != null) {
+					if(theTestRegEx != null) {
 						// Add it to the array
-						retVal[i] = theTestRegExp;
+						retVal[i] = theTestRegEx;
 					}
 				}
 			}
@@ -136,18 +141,18 @@ public class RegExpCollector {
 	}
 	
 	// Print the list of regular expression tests
-	protected void print() {
+	private void print() {
 		// Is everything OK?
 		if(getAllOK()) {
 			// Do we have at least one regular expression to test with?
 			if ((regExVector != null) && (regExVector.size() > 0)) {
 				for(int i=0; i<regExVector.size(); i++) {
 					// Get the regular expression to test
-					TestRegExp theTestRegExp = regExVector.elementAt(i);
+					TestRegExp theTestRegEx = regExVector.elementAt(i);
 					// Do we have a regular expression to test?
-					if(theTestRegExp != null) {
+					if(theTestRegEx != null) {
 						// Print the regular expression to test
-						System.out.println(theTestRegExp.getName() + "\t" + theTestRegExp.getRegExp());
+						System.out.println(theTestRegEx.getName() + "\t" + theTestRegEx.getRegExp());
 					}
 				}
 			}
@@ -159,4 +164,18 @@ public class RegExpCollector {
 		// Return the results
 		return collectRegExp(confFilePath);
 	}
+	
+	public static void main(String[] args) {
+		// Create the object
+		RegExpCollector regExCollector = new RegExpCollector(CONFIG_FILE_PATH);
+		// Do we have an object?
+		if((regExCollector != null) && (regExCollector.getAllOK())) {
+			// Get all the regular expressions
+			if(regExCollector.run()) {
+				// Print the list
+				regExCollector.print();
+			}
+		}
+	}
+
 }
